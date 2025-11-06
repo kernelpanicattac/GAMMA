@@ -79,6 +79,23 @@ create_update_script() {
 #!/bin/bash
 DE=${XDG_CURRENT_DESKTOP,,}
 
+backup_user_data() {
+  echo "------- Создаем директорию для резервной копии..."
+  dir_name="saves_backup_$(date +%F)_$(date +%H_%M)"
+  mkdir -pv "$dir_name/Anomaly/appdata" "$dir_name/GAMMA/mods"
+
+  echo "------- Резервное копирование user.ltx (бинды и настройки)..."
+  cp -v ./Anomaly/appdata/user.ltx "$dir_name/Anomaly/appdata/"
+
+  echo "------- Резервное копирование сохранений..."
+  cp -R -v ./Anomaly/appdata/savedgames "$dir_name/Anomaly/appdata/"
+
+  echo "------- Резервное копирование MCM значений..."
+  cp -R -v "./GAMMA/mods/G.A.M.M.A. MCM values - Rename to keep your personal changes" "$dir_name/GAMMA/mods/"
+
+  echo "Резервная копия создана в $dir_name"
+}
+
 ask_update() {
   case "$DE" in
     kde*)
@@ -100,6 +117,9 @@ if [ $? -eq 0 ]; then
   cd "$SCRIPT_DIR" || { echo "Ошибка: не удалось перейти в $SCRIPT_DIR"; read; exit 1; }
 
   source ./gamma-launcher/venv/bin/activate || { echo "Ошибка: не удалось активировать окружение"; read; exit 1; }
+
+  backup_user_data
+
   rm -rf ./Anomaly ./GAMMA
   mkdir ./Anomaly ./GAMMA
   gamma-launcher full-install --anomaly ./Anomaly --gamma ./GAMMA --cache-directory ./cache
