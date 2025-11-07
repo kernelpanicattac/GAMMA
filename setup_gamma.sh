@@ -57,23 +57,6 @@ setup_gamma_launcher() {
   return 0
 }
 
-backup_user_data() {
-  echo "------- Создаем директорию для резервной копии..."
-  dir_name="saves_backup_$(date +%F)_$(date +%H_%M)"
-  mkdir -pv "$dir_name/Anomaly/appdata" "$dir_name/GAMMA/mods"
-
-  echo "------- Резервное копирование user.ltx (бинды и настройки)..."
-  cp -v ./Anomaly/appdata/user.ltx "$dir_name/Anomaly/appdata/"
-
-  echo "------- Резервное копирование сохранений..."
-  cp -R -v ./Anomaly/appdata/savedgames "$dir_name/Anomaly/appdata/"
-
-  echo "------- Резервное копирование MCM значений..."
-  cp -R -v "./GAMMA/mods/G.A.M.M.A. MCM values - Rename to keep your personal changes" "$dir_name/GAMMA/mods/"
-
-  echo "Резервная копия создана в $dir_name"
-}
-
 create_update_script() {
   cat > "$1/update_gamma.sh" << 'EOF'
 #!/bin/bash
