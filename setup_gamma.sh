@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Функция подтверждения продолжения
 prompt_continue() {
   while true; do
     read -p "$1 (y/n): " yn
@@ -12,7 +11,6 @@ prompt_continue() {
   done
 }
 
-# Определение ОС для установки пакетов
 OS_TYPE=""
 if [ -f /etc/os-release ]; then
   . /etc/os-release
@@ -22,8 +20,7 @@ fi
 install_packages() {
   case "$OS_TYPE" in
     ubuntu|debian)
-      sudo apt-get update
-      sudo apt-get install -y unzip unrar libunrar zip python3-venv python3-pip git || return 1
+      sudo apt-get update && sudo apt-get install -y unzip unrar libunrar zip python3-venv python3-pip git || return 1
       ;;
     arch|manjaro)
       sudo pacman -Sy --noconfirm unzip unrar p7zip python-virtualenv python-pip git || return 1
@@ -41,19 +38,13 @@ install_packages() {
 
 setup_gamma_launcher() {
   source ./gamma-launcher/venv/bin/activate
-  if command -v gamma-launcher >/dev/null 2>&1; then
-    if gamma-launcher --version >/dev/null 2>&1; then
-      echo "Gamma-launcher уже установлен и работает. Пропускаем установку."
-      return 0
-    fi
+  if command -v gamma-launcher >/dev/null 2>&1 && gamma-launcher --version >/dev/null 2>&1; then
+    echo "Gamma-launcher уже установлен и работает. Пропускаем установку."
+    return 0
   fi
   echo "Устанавливаем gamma-launcher..."
   pip install --upgrade pip
-  pip install ./gamma-launcher
-  if [ $? -ne 0 ]; then
-    echo "Ошибка при установке gamma-launcher."
-    return 1
-  fi
+  pip install ./gamma-launcher || { echo "Ошибка при установке gamma-launcher."; return 1; }
   return 0
 }
 
@@ -65,7 +56,7 @@ DE=${XDG_CURRENT_DESKTOP,,}
 backup_user_data() {
   echo "------- Создаем директорию для резервной копии..."
   dir_name="saves_backup_$(date +%F)_$(date +%H_%M)"
-  mkdir -pv "$dir_name/Anomaly/appdata" "$dir_name/GAMMA/mods"
+  mkdir -p "$dir_name/Anomaly/appdata" "$dir_name/GAMMA/mods"
 
   echo "------- Резервное копирование user.ltx (бинды и настройки)..."
   cp -v ./Anomaly/appdata/user.ltx "$dir_name/Anomaly/appdata/"
@@ -93,20 +84,19 @@ ask_update() {
   esac
 }
 
-ask_update
-if [ $? -eq 0 ]; then
-  # Переход в директорию, где лежит скрипт
+if ask_update; then
   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-  cd "$SCRIPT_DIR" || { echo "Ошибка: не удалось перейти в $SCRIPT_DIR"; read; exit 1; }
+  cd "$SCRIPT_DIR" || { echo "Ошибка: не удалось перейти в $SCRIPT_DIR"; exit 1; }
 
-  source ./gamma-launcher/venv/bin/activate || { echo "Ошибка: не удалось активировать окружение"; read; exit 1; }
+  source ./gamma-launcher/venv/bin/activate || { echo "Ошибка: не удалось активировать окружение"; exit 1; }
 
   backup_user_data
 
   rm -rf ./Anomaly ./GAMMA
   mkdir ./Anomaly ./GAMMA
   gamma-launcher full-install --anomaly ./Anomaly --gamma ./GAMMA --cache-directory ./cache
-  echo "Обновление завершено"; read
+  echo "Обновление завершено"
+  read
 fi
 EOF
   chmod +x "$1/update_gamma.sh"
@@ -163,11 +153,7 @@ if [ ! -d "gamma-launcher/venv" ]; then
   python3 -m venv ./gamma-launcher/venv
 fi
 
-setup_gamma_launcher
-if [ $? -ne 0 ]; then
-  echo "Не удалось установить gamma-launcher, продолжение невозможно."
-  exit 1
-fi
+setup_gamma_launcher || { echo "Не удалось установить gamma-launcher, продолжение невозможно."; exit 1; }
 
 backup_user_data
 
